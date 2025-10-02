@@ -14,14 +14,10 @@ from langchain.prompts import PromptTemplate, ChatPromptTemplate
 from getpass import getpass
 import os
 
-
 def get_api_key(provider_api_key: str):
     if f"{provider_api_key}" not in os.environ:
         os.environ.get[f"{provider_api_key}"] = getpass(f"Enter your {provider_api_key}:")
     return os.environ.get[f"{provider_api_key}"]
-
-
-
 
 
 class LLMClientLC:
@@ -43,7 +39,7 @@ class LLMClientLC:
             self.api_key = api_key or get_api_key("ANTHROPIC_API_KEY")
             if not self.api_key:
                 raise ValueError("⚠️ API key for Anthropic missed")
-            self.model = model or "claude-3-haiku-20240307"
+            self.model = model or "claude-3-7-sonnet-20250219"
             # Instantiation
             self.llm = ChatAnthropic(model=self.model, api_key=self.api_key, temperature=0, max_tokens=1024)
 
@@ -51,7 +47,8 @@ class LLMClientLC:
             self.api_key = api_key or get_api_key("MISTRAL_API_KEY")
             if not self.api_key:
                 raise ValueError("⚠️ Mistral API KEY missed")
-            self.model = model or "mistral-tiny"
+            # "magistral-small-2509" : new open model with reasoning
+            self.model = model or "magistral-small-2509" or "mistral-medium-2508"
             # Instantiation
             self.llm = ChatMistralAI(model=self.model, api_key=self.api_key, temperature=0, max_tokens=1024)
 
@@ -59,17 +56,14 @@ class LLMClientLC:
             raise ValueError("⚠️ Unsupported Provider (Choose whether 'anthropic' or 'mistral')")
 
     def chat(self, context: str, question) -> str:
-            # On combine prompt + LLM dans une chain
+            # we chain model with a prompt template
         chain = self.chat_prompt | self.llm
 
-        # On injecte les variables du template
+        # Pass argument to get AIMessage (Prompt + context)
         response = chain.invoke({
             "context": context,
             "question": question
         })
 
-        # response est un AIMessage, donc on récupère son contenu
+        # return wanted content
         return response.content[0].text if hasattr(response.content[0], "text") else response.content
-
-
-# caches management

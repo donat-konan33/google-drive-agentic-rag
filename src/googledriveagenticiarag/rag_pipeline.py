@@ -2,15 +2,11 @@
 from connect_drive import ConnectDrive
 from googledriveagenticiarag.vector_store import store_embeddings
 from googledriveagenticiarag.embedder import Embedder
+import json
 
 # get data set up
 connect_drive = ConnectDrive()
 data = connect_drive.load_data() # get objects from Drive
-
-def check_data_not_still_loaded(data):
-    """check data not still loaded before"""
-    # TODO: return only data never loaded before
-    pass
 
 
 # Building Knowledge Database with ChromaDB

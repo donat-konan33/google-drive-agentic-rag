@@ -4,7 +4,7 @@ from langchain.vectorstores import Chroma # type: ignore
 from markitdown import MarkItDown # type: ignore
 from sentence_transformers import SentenceTransformer # type: ignore # for local use of embeddings models
 from typing import Tuple
-
+import json
 
 from langchain.embeddings import OpenAIEmbeddings, HuggingFaceEmbeddings # type: ignore # whetever used providers embeddings models
 import asyncio
@@ -29,6 +29,31 @@ class ProcessData:
         if connect_drive is None:
             raise ValueError("ConnectDrive instance is not available.")
         self.docs = connect_drive.load_data()  # list of Document objects
+        self.data_processed = "src/googledriveagenticiarag/cache/data_processed.json"
+
+    def check_data_not_still_loaded(docs, data_processed):
+        """Check data not already loaded before and return only new sources"""
+        # TODO: return only data never loaded before
+        sources = [doc.metadata.get("source") for doc in docs]
+
+        try:
+            with open(data_processed, "r") as f:
+                file = json.load(f)
+                ancient_content = file.get("sources", [])
+        except (FileNotFoundError, json.JSONDecodeError):
+            ancient_content = []
+
+        # New sources not already processed
+        new_sources = list(set(sources) - set(ancient_content))
+
+        # update data processed file
+        if new_sources:
+            all_sources = list(set(ancient_content + new_sources))
+            with open(data_processed, "w") as f:
+                json.dump({"sources": all_sources}, f, indent=2)
+
+        return new_sources
+
 
     def ensure_text(self, doc):
         md = MarkItDown()
@@ -40,6 +65,7 @@ class ProcessData:
         else:
             # if text-based document
             return doc.page_content.strip() or ""
+
 
     async def process_document(self, doc, text_splitter):
         """Process a single document: chunking and embedding"""

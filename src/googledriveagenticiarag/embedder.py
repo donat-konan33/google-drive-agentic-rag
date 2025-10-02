@@ -40,3 +40,8 @@ class Embedder:
     def openai_embeddings(cls, data):
         """get embeddings from OpenAI-based models"""
         pass
+
+    @classmethod
+    def google_embeddings(cls, data):
+        """Get embeddings from gemini models"""
+        pass

@@ -1,6 +1,7 @@
 # AGENTIC AI RAG FOR GOOGLE DRIVE STORAGE
 
 ![RAG LLM](https://img.shields.io/badge/RAG%20LLM-lightgrey?style=flat)
+![LangChain](https://img.shields.io/badge/LangChain-4285F4?logo=google-cloud&logoColor=white&style=flat)
 ![Google Drive API](https://img.shields.io/badge/Google%20Drive%20API-4285F4?logo=googledrive&logoColor=white&style=flat)
 ![GCP](https://img.shields.io/badge/GCP--4285F4?logo=google-cloud&logoColor=white&style=flat)
 [![Chroma](https://img.shields.io/badge/Chroma-1DB954?style=flat&logo=appveyor&logoColor=white)](https://www.trychroma.com)
@@ -355,6 +356,31 @@ Turn your APP on locally and leverage the power of gpu hosted by providers.
 ### Providers solutions
 Understanding embeddings GenAI model and others models ????
 
+```
+from google import genai
+
+client = genai.Client()
+
+result = client.models.embed_content(
+        model="gemini-embedding-001",
+        contents="What is the meaning of life?")
+
+print(result.embeddings)
+```
+
+**[Some Use Cases](https://python.langchain.com/docs/integrations/chat/google_vertex_ai_palm/)**
+-----
+
+Supported task types
+Task type	Description	Examples
+SEMANTIC_SIMILARITY	Embeddings optimized to assess text similarity.	Recommendation systems, duplicate detection
+CLASSIFICATION	Embeddings optimized to classify texts according to preset labels.	Sentiment analysis, spam detection
+CLUSTERING	Embeddings optimized to cluster texts based on their similarities.	Document organization, market research, anomaly detection
+RETRIEVAL_DOCUMENT	Embeddings optimized for document search.	Indexing articles, books, or web pages for search.
+RETRIEVAL_QUERY	Embeddings optimized for general search queries. Use RETRIEVAL_QUERY for queries; RETRIEVAL_DOCUMENT for documents to be retrieved.	Custom search
+CODE_RETRIEVAL_QUERY	Embeddings optimized for retrieval of code blocks based on natural language queries. Use CODE_RETRIEVAL_QUERY for queries; RETRIEVAL_DOCUMENT for code blocks to be retrieved.	Code suggestions and search
+QUESTION_ANSWERING	Embeddings for questions in a question-answering system, optimized for finding documents that answer the question. Use QUESTION_ANSWERING for questions; RETRIEVAL_DOCUMENT for documents to be retrieved.	Chatbox
+FACT_VERIFICATION	Embeddings for statements that need to be verified, optimized for retrieving documents that contain evidence supporting or refuting the statement. Use FACT_VERIFICATION for the target text; RETRIEVAL_DOCUMENT for documents to be retrieved	Automated fact-ch
 ****
 
 
@@ -370,6 +396,11 @@ from langchain_core.messages import AIMessage, HumanMessage
 model = ChatAnthropic(model="claude-3-opus-20240229", temperature=0, max_tokens=1024)
 message = HumanMessage(content="What is the capital of France?")
 ```
+Autre modèle de chat:
+-
+Others ChatVertexAI
+
+
 
 **LLMs**
 ```
@@ -379,11 +410,87 @@ model = AnthropicLLM(model="claude-2.1", temperature=0, max_tokens=1024)
 response = model.invoke("The best restaurant in San Francisco is: ")
 ```
 
+La “température” : à quoi ça sert ?
 
-**[Google Search](https://ai.google.dev/gemini-api/docs/live) Use case**
+La température dans les modèles de langage est un hyperparamètre qui contrôle le degré de “randomness” / diversité / créativité dans la génération du texte.
+où
+𝑇
+T est la température.
 
+Si
+𝑇
+=
+1
+T=1, on utilise les probabilités “telles quelles”.
 
+Si
+𝑇
+<
+1
+T<1 (ex : 0.2, 0.3), on “étire” les différences : les probabilités élevées deviennent encore plus élevées, les faibles deviennent plus faibles → le modèle est plus déterministe (il va souvent choisir les mots les plus probables).
 
+Si
+𝑇
+>
+1
+T>1, on “aplatit” les différences : cela donne plus de chance aux mots moins probables d’être choisis → sorties plus « créatives », moins prévisibles.
+
+Effets pratiques
+
+Température basse (ex : 0.0 à 0.3 / 0.5) : idéal pour des tâches où tu veux de la cohérence, de la précision, moins de “dérives” (ex : réponses factuelles, résumé, QA).
+
+Température plus élevée (ex : 0.7, 1.0, voire >1) : utile si tu veux de la diversité, de la créativité (écriture, dialogues, brainstorming).
+
+Une température trop élevée peut rendre le texte incohérent ou erratique.
+
+## Global Overview
+[See an overview topic around LLM](https://docs.mistral.ai/guides/observability/#model)
+
+## Mistral: all available [models](https://docs.mistral.ai/getting-started/models/models_overview/)
+
+**[Google Search](https://ai.google.dev/gemini-api/docs/live) Use case as built-in tools**
+
+```
+
+# Gemini can execute a Google search and use the results to ground its responses:
+
+from langchain_google_vertexai import ChatVertexAI
+
+llm = ChatVertexAI(model="gemini-2.5-flash").bind_tools([{"google_search": {}}])
+
+response = llm.invoke("What is today's news?")
+```
+
+or
+
+**[Code execution]()**
+
+```
+from langchain_google_vertexai import ChatVertexAI
+
+llm = ChatVertexAI(model="gemini-2.5-flash").bind_tools([{"code_execution": {}}])
+
+response = llm.invoke("What is 3^3?")
+```
+An other Useful resource for [grounding with google search](https://ai.google.dev/gemini-api/docs/google-search).
+
+## **Prompt caching**
+
+## Message Histories
+
+## [LangSmith](https://docs.langchain.com/langsmith/home) for tracking langchain workflow : Monitor and evaluate LLM App
+
+## LangGraph : Build effective Agentic System
+
+## [Langchain Agent](https://python.langchain.com/docs/integrations/tools/gradio_tools/#related)
+
+## [LangChain on GCP cloud](https://cloud.google.com/use-cases/langchain?hl=fr)
+
+## Frontend : Gradio and streamlit
+
+[**Streamlit**](https://python.langchain.com/docs/integrations/memory/streamlit_chat_message_history/)
+
+[**Gradio**](https://python.langchain.com/docs/integrations/tools/gradio_tools/#related)
 
 ### Utilisation de solution en local
 LM Studio se concentre sur la facilité d’usage, OpenLLM sur la flexibilité (déploiement, MLOps, etc.).
