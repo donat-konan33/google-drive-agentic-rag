@@ -1,81 +1,89 @@
 from pathlib import Path
-from langchain.text_splitter import RecursiveCharacterTextSplitter # type: ignore
 from langchain.vectorstores import Chroma # type: ignore
-from markitdown import MarkItDown # type: ignore
+#from markitdown import MarkItDown # type: ignore
 from sentence_transformers import SentenceTransformer # type: ignore # for local use of embeddings models
-from typing import Tuple
+from langchain.embeddings import OpenAIEmbeddings, HuggingFaceEmbeddings # type: ignore # whetever used providers embeddings models
+from collections import Counter, OrderedDict
+from typing import Iterable, Optional, List, Tuple
+from langchain.schema import Document
+import asyncio
 import json
 
-from langchain.embeddings import OpenAIEmbeddings, HuggingFaceEmbeddings # type: ignore # whetever used providers embeddings models
-import asyncio
-from connect_drive import ConnectDrive
-from collections import Counter
-
+# get model
 model = SentenceTransformer('multi-qa-mpnet-base-dot-v1')
-try :
-    connect_drive = ConnectDrive()
-except Exception as e:
-    print(f"Error during ConnectDrive initialization: {e}")
-    connect_drive = None
-
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=200,   # https://www.pinecone.io/learn/chunking-strategies/ # Ils montrent que trop petit → perte de contexte, trop grand → embeddings bruités, et que 10–20% d’overlap est une bonne pratique pour garder la cohérence.
-    separators=["\n\n", "\n", ". ", " ", ""] # Split hierarchy
-)
 
 class ProcessData:
     def __init__(self):
-        if connect_drive is None:
-            raise ValueError("ConnectDrive instance is not available.")
-        self.docs = connect_drive.load_data()  # list of Document objects
+        #self.docs = connect_drive.load_data()  # list of Document objects : optimization Class method calling by getting data outside
         self.data_processed = "src/googledriveagenticiarag/cache/data_processed.json"
 
-    def check_data_not_still_loaded(docs, data_processed):
+
+    @staticmethod
+    def merge_docs_by_source(docs: Iterable[Document], filter_sources: Optional[Iterable[str]] = None) -> OrderedDict:
+         """
+         group and concat different pages by source.
+
+         Args:
+             docs: iterable of langchain.schema.Document
+             filter_sources: iterable (optional)
+         Returns:
+             OrderedDict where each key is a source and value a dict {"title", "content"}.
+         """
+         grouped = OrderedDict()
+
+         for doc in docs:
+             src = (doc.metadata or {}).get("source") or "unknown"
+             if filter_sources is not None and src not in filter_sources:
+                 continue
+
+             title = (doc.metadata or {}).get("title") or "untitled"
+             text = (doc.page_content or "") + "\n\n"   # séparation entre pages
+
+             if src not in grouped:
+                 grouped[src] = {"title": title, "content": text}
+             else:
+                 grouped[src]["content"] += text
+
+         return grouped
+
+
+    @staticmethod
+    def check_data_never_loaded(data_processed, sources: Counter) -> List[str]:
         """Check data not already loaded before and return only new sources"""
         # TODO: return only data never loaded before
-        sources = [doc.metadata.get("source") for doc in docs]
+        sources = list(sources.keys())#[doc.metadata.get("source") for doc in docs]
 
         try:
             with open(data_processed, "r") as f:
                 file = json.load(f)
-                ancient_content = file.get("sources", [])
+                ancient_sources = file.get("sources", [])
         except (FileNotFoundError, json.JSONDecodeError):
-            ancient_content = []
+            ancient_sources = []
 
-        # New sources not already processed
-        new_sources = list(set(sources) - set(ancient_content))
-
-        # update data processed file
-        if new_sources:
-            all_sources = list(set(ancient_content + new_sources))
-            with open(data_processed, "w") as f:
-                json.dump({"sources": all_sources}, f, indent=2)
-
-        return new_sources
+        # return New sources not already processed
+        return list(set(sources) - set(ancient_sources))
 
 
-    def ensure_text(self, doc):
-        md = MarkItDown()
-        file_path = doc.metadata.get("source", "unknown")
-        if file_path.endswith((".png", ".jpg", ".jpeg")):
-            # OCR via MarkItDown
-            result = md.convert(file_path)
-            return result.text_content.strip() or ""
-        else:
-            # if text-based document
-            return doc.page_content.strip() or ""
+    # strurcture docs coming from drive
+    def get_document(self, docs: List[Document]):
+        """"""
+        all_source = Counter(doc.metadata.get("source", "unknown") for doc in docs)
+        new_source = self.check_data_never_loaded(self.data_processed, all_source)
+        documents = self.merge_docs_by_source(docs, new_source)
+
+        return documents
 
 
-    async def process_document(self, doc, text_splitter):
+    async def process_document(self, documents: OrderedDict, source:str, text_splitter):
         """Process a single document: chunking and embedding"""
         try:
             # Step 1: Chunking, helps to manage context length limitations of LLMs
-            chunks = text_splitter.split_text(self.ensure_text(doc))
+            chunks = text_splitter.split_text(documents.get(source)["content"])
 
             # Step 2: Embedding and Storing in ChromaDB
             if chunks:
-                return [{"content": chunk, "source": doc.metadata.get("source", "unknown")} for chunk in chunks]
+                return [{"source": source, "title": documents.get(source)["title"], "content": chunk }
+                        for chunk in chunks]
             else:
                 print("No chunks created from the document.")
                 return None
@@ -83,13 +91,15 @@ class ProcessData:
             print(f"Error processing document: {e}")
             return None
 
-    async def process_documents(self, docs, text_splitter):
-        tasks = []
-        for doc in docs:
-            tasks.append(self.process_document(doc, text_splitter))
+
+    async def process_documents(self, documents: OrderedDict, text_splitter):
+        """parallelize chunking tasks"""
+        tasks = [self.process_document(documents, source, text_splitter) for source in list(documents)]
         return await asyncio.gather(*tasks)
 
-    def count_documents_chunks(all_chunks):
+
+    # Check out our chunkings stats
+    def count_documents_chunks(self, all_chunks):
         """Count chunks or each document"""
         source_counts = Counter(chunk["source"] for chunk in all_chunks) # different sources with their frequencies
         chunk_lengths = [len(chunk["content"]) for chunk in all_chunks]
@@ -98,41 +108,31 @@ class ProcessData:
         print(f"Chunk length: {min(chunk_lengths)}-{max(chunk_lengths)} characters")
 
         for source, count in source_counts.items():
-            print(f"-------------------------\nSource document: {Path(source).name} - Chunks: {count}\n-------------------")
+            print(f"-------------------------\nSource document: {source} - Chunks: {count}\n-------------------")
+
+
+    def _clean_text(self, text: str) -> str:
+        """Normalize content"""
+        import unicodedata
+        if not isinstance(text, str):
+            return ""
+        # delete non-printing characters or invalid
+        text = text.encode("utf-8", "ignore").decode("utf-8", "ignore")
+        # Normalize
+        text = unicodedata.normalize("NFKC", text)
+        return text.strip()
 
     # create embeddings with documents chunks
-    def create_chunks_embeddings(all_chunks):
+    def create_chunks_embeddings(self, all_chunks) -> Tuple[List]:
         """create documents chunks embeddings"""
-        documents = [chunk["content"] for chunk in all_chunks]
-        model
+        all_chunks_doc = [self._clean_text(chunk["content"]) for chunk in all_chunks if chunk.get("content") and chunk["content"].strip()]
+
         try:
-            embeddings = model.encode(documents, show_progress_bar=True, batch_size=8)
+            embeddings = model.encode(all_chunks_doc, show_progress_bar=True, batch_size=8)
             print(f"Embedding generation results:")
             print(f"  - Embeddings shape: {embeddings.shape}")
             print(f"  - Vector dimensions: {embeddings.shape[1]}")
-            return embeddings
+            return all_chunks_doc, all_chunks, embeddings
         except Exception as e:
             print(f"Error creating embeddings: {e}")
             return None
-
-## OpenAI Embeddings (API)
-# from langchain.embeddings import OpenAIEmbeddings
-# embeddings = OpenAIEmbeddings(model="text-embedding-3-small") # learn more
-
-# Creating Searchable Embeddings
-# RAG systems need to understand text meaning, not just match keywords. SentenceTransformers converts your text into numerical vectors that capture semantic relationships, allowing the system to find truly relevant information even when exact words don’t match.
-
-# Generate each chunk Embedding
-
-######## tester Vertex AI LLM and Embeddings
-# from langchain_community.embeddings import VertexAIEmbeddings
-# embeddings = VertexAIEmbeddings()
-# async def embed_chunk(chunk, model_name=):
-#
-#2️⃣ Vertex AI (Text Embeddings)
-#
-#✅ Vertex AI propose des modèles LLM et embeddings via Text Embeddings API.
-#
-#❌ Mais chaque requête est payante, même pour le Free Tier.
-#
-# Le crédit initial te permet de tester gratuitement, mais dès qu’il est épuisé, tu dois payer.

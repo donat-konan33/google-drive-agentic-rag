@@ -1,1 +1,4 @@
 .env
+./token.json
+./my_README.md
+./src/googledriveagenticiarag/agent.py

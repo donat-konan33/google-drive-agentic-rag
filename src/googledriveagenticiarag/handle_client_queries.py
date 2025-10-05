@@ -1,4 +1,7 @@
-from sentence_transformers import util
+from sentence_transformers import util, SentenceTransformer
+
+model = SentenceTransformer("multi-qa-mpnet-base-dot-v1")
+
 
 def format_query_results(question, query_embedding, documents, metadatas, model):
     """Format and print the search results with similarity scores"""
@@ -33,7 +36,7 @@ def query_knowledge_base(question, model, collection, n_results=2):
 
     format_query_results(question, query_embedding, documents, metadatas)
 
-def retrieve_context(collection, model, question, n_results=5):
+def retrieve_context(question, n_results, collection, model=model):
     """Retrieve relevant context using embeddings"""
     query_embedding = model.encode([question])
     results = collection.query(
@@ -43,8 +46,9 @@ def retrieve_context(collection, model, question, n_results=5):
     )
 
     documents = results["documents"][0]
+    metadatas = results["metadatas"][0]
     context = "\n\n---SECTION---\n\n".join(documents)
-    return context, documents
+    return context, metadatas, documents
 
 
 def get_llm_answer(chain, question, context):

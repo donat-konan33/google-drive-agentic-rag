@@ -1,19 +1,19 @@
-from googledriveagenticiarag.utils.processing_data import ProcessData, text_splitter
+from src.googledriveagenticiarag.utils.processing_data import ProcessData
 
 
 import asyncio
 # process data and Intelligent Chunking with LangChain
 class Embedder:
-    def __init__(self, data):
-        self.docs_chunks = asyncio.run(ProcessData.process_documents(data, text_splitter))
+    def __init__(self):
+        """"""
+        self.process_data = ProcessData()
 
-    def get_all_chunks(self, data):
+    def get_all_chunks(self, docs_chunks):
         """get all chunk from data"""
         try :
-            docs_chunks = self.docs_chunk
             if docs_chunks is not None:
                 all_chunks = [chunk for chunk_list in docs_chunks for chunk in chunk_list]
-                ProcessData.count_documents_chunks(all_chunks)
+                self.process_data.count_documents_chunks(all_chunks)
                 return all_chunks
         except Exception as e:
             print(f"Error during document processing: {e}")
@@ -21,27 +21,28 @@ class Embedder:
 
     # Creating Searchable Embeddings with SentenceTransformers
     # Load Q&A-optimized embedding model (downloads automatically on first use)
-    @classmethod
-    def local_embeddings(self, data):
+
+    def local_embeddings(self, docs_chunks):
         """get documents embeddings"""
         try :
-            all_chunks = self.get_all_chunks(data)
+            all_chunks = self.get_all_chunks(docs_chunks)
             if all_chunks is not None:
-                return ProcessData.create_chunks_embeddings(all_chunks=all_chunks)
+                return self.process_data.create_chunks_embeddings(all_chunks=all_chunks)
         except Exception as e:
             print(f"Error during embeddings creation: {e}")
             return None
-    @classmethod
-    def huggingface_embeddings(cls, data):
+
+    # provider embedding
+    def huggingface_embeddings(self, docs_chunks):
         """get embeddings drom huggingface api"""
         pass
 
-    @classmethod
-    def openai_embeddings(cls, data):
+
+    def openai_embeddings(self, docs_chunks):
         """get embeddings from OpenAI-based models"""
         pass
 
-    @classmethod
-    def google_embeddings(cls, data):
+
+    def google_embeddings(self, docs_chunks):
         """Get embeddings from gemini models"""
         pass

@@ -1,33 +1,48 @@
 """Connect to data from Google Drive and load data contents"""
 from langchain_google_community.drive import GoogleDriveLoader  # https://python.langchain.com/api_reference/google_community/drive/langchain_google_community.drive.GoogleDriveLoader.html#langchain_google_community.drive.GoogleDriveLoader
-from langchain import Document
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 import os
+from pathlib import Path
 
-SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
-
-credentials_path = os.getenv("GCP_CREDENTIAL")
-token_path = os.getenv("TOKEN_PATH")
+service_account_key = os.getenv("GOOGLE_ACCOUNT_FILE")
 
 # connection to GCP and then users drive according to scopes defined in GoogleCloudConsole
 # Document Ingestion with MarkItDown
 class ConnectDrive:
     def __init__(self):
-        self.credentials_path = credentials_path
-        self.file_types = [".md", ".txt", ".pdf", ".docx", ".pptx", ".xlsx", ".png", ".jpg", ".jpeg", "csv"]
+        self.credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        self.file_types = ["presentation", "pdf"]
         self.SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+        self.token_path = 'token.json'
+
+
+    def get_auth_token(self):
+        flow = InstalledAppFlow.from_client_secrets_file(self.credentials_path, self.SCOPES)
+        # force server port to be 8506 as defined in Google Cloud Console, GoogleLoader exports everytime dynamic ports WITH PORT=0 and this behavior is not supported by config set into GCP console
+        creds = flow.run_local_server(port=8506, prompt="consent")
+        with open(self.token_path, "w") as token:
+            token.write(creds.to_json())
+        print("✅ Token saved !")
 
     def load_data(self):
         """Load data from Google Drive"""
+        if not os.path.exists(self.token_path):
+            self.get_auth_token()
+
         drive_loader = GoogleDriveLoader(
-            credentials_path=self.credentials_path,
-            token_path=token_path,
+            #service_account_key=service_account_key, auth 1 for managing google drive of the GCP account
+            credentials_path=self.credentials_path, # auth 2
+            token_path='token.json',                # auth 2
             load_auth=True,
             scopes=self.SCOPES,
-            folder_id=None,  # None defaults to 'My Drive'
+            folder_id='root',  # root defaults to 'My Drive'
             recursive=True,
             file_types=self.file_types,
+            num_results=15
         )
+
         try:
             print("Loading data from Google Drive...")
             docs = drive_loader.load()
