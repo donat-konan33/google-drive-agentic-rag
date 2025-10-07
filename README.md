@@ -1,10 +1,10 @@
-# AGENTIC AI RAG FOR GOOGLE DRIVE STORAGE
+# **AGENTIC AI RAG FOR GOOGLE DRIVE STORAGE**
 
 ![RAG LLM](https://img.shields.io/badge/RAG%20LLM-lightgrey?style=flat)
 ![LangChain](https://img.shields.io/badge/LangChain-4285F4?logo=google-cloud&logoColor=white&style=flat)
 ![Google Drive API](https://img.shields.io/badge/Google%20Drive%20API-4285F4?logo=googledrive&logoColor=white&style=flat)
 ![GCP](https://img.shields.io/badge/GCP--4285F4?logo=google-cloud&logoColor=white&style=flat)
-[![Chroma](https://img.shields.io/badge/Chroma-1DB954?style=flat&logo=appveyor&logoColor=white)](https://www.trychroma.com)
+[![Chromadb](https://img.shields.io/badge/Chroma-1DB954?style=flat&logo=appveyor&logoColor=white)](https://www.trychroma.com)
 
 ---
 ![app logo](assets/images/RagApp.png)
@@ -18,7 +18,7 @@ It extracts, chunks, embeds, and indexes documents into ChromaDB, then answers u
 
 ✅ Only read access is requested (`drive.readonly`).
 🔒 No file creation, modification, or deletion.
-🌍 Designed for French-speaking users with Mistral 7B support.
+🌍 Designed for French-speaking users with LLM providers like Antropic or Mistral support.
 
 ---
 
@@ -77,6 +77,9 @@ poetry run python -m src.googledriveagenticiarag.main
 - Fetch and chunk your Drive files.
 - Generate embeddings and store them in ChromaDB.
 - Launch a Gradio/Streamlit UI for querying.
+
+[![doc search from google drive](assets/images/rag-demo-image.png)](https://donat-konan33.github.io/assets/videos/demo-rag.mp4)
+
 
 ## 🔐 Security & Compliance
 
