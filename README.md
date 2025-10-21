@@ -51,8 +51,8 @@ It extracts, chunks, embeds, and indexes documents into ChromaDB, then answers u
 
 ### 2. Local Installation
 ```bash
-git clone https://github.com/donat-konan33/GoogleDriveAgenticIARag.git
-cd GoogleDriveAgenticIARag
+git clone https://github.com/donat-konan33/google-drive-agentic-rag.git
+cd google-drive-agentic-rag
 poetry install
 ```
 
