@@ -9,37 +9,39 @@
 ---
 ![app logo](assets/images/RagApp.png)
 
-# Google Drive RAG Chatbot
+# **Google Drive RAG Chatbot**
 
 ## 📌 **Overview**
 
 This application enables secure, read-only Retrieval-Augmented Generation (RAG) over a user’s Google Drive documents using open-source LLMs and vector search.
 It extracts, chunks, embeds, and indexes documents into ChromaDB, then answers user queries with grounded, context-aware responses — without modifying or storing user files.
 
-✅ Only read access is requested (`drive.readonly`).
-🔒 No file creation, modification, or deletion.
-🌍 Designed for French-speaking users with LLM providers like Antropic or Mistral support.
+  ✅ Only read access is requested (`drive.readonly`).
+
+  🔒 No file creation, modification, or deletion.
+
+  🌍 Designed for French-speaking users with LLM providers like Antropic or Mistral support.
 
 ---
 
-## 🔧 Key Components
+## 🔧 **Key Components**
 
 | Layer               | Technology |
 |--------------------|------------|
-| Auth & Data Access  | Google OAuth2 + `drive.readonly` |
+| Auth & Data Access  | ``Google OAuth2`` + `drive.readonly` |
 | Document Loader     | LangChain Google Drive Loader |
 | Embedding Model     | Sentence Transformers / Mistral Embeddings |
 | Vector DB           | Chroma (local or cloud) |
 | LLM                 | Claude Sonnet 3.7 and Mistral 7B (quantized, via OpenLLM or local inference) |
 | Orchestration       | LangChain + LangGraph |
-| Frontend            | Gradio
+| Frontend            | Gradio, Streamlit |
 | Observability       | LangSmith (this option is not a free service)|
 
 ---
 
-## ⚙️ Setup & Configuration
+## ⚙️ **Setup & Configuration**
 
-### 1. Google Cloud Platform Setup
+### 1. **Google Cloud Platform Setup**
 1. Create a Google Cloud Project.
 2. Enable the Google Drive API.
 3. Configure the OAuth Consent Screen:
@@ -47,9 +49,10 @@ It extracts, chunks, embeds, and indexes documents into ChromaDB, then answers u
    - Add your email as a Test User
    - Declare the OAuth scope: `https://www.googleapis.com/auth/drive.readonly`
 4. Create OAuth 2.0 Client ID → download `credentials.json`.
+
 📝 **Important:** For public deployment, Google verification is required for sensitive scopes.
 
-### 2. Local Installation
+### 2. **Local Installation**
 ```bash
 git clone https://github.com/donat-konan33/google-drive-agentic-rag.git
 cd google-drive-agentic-rag
@@ -61,14 +64,17 @@ Place your ``credentials.json`` in the ``root`` or ``src/`` directory.
 ---
 
 
-### 3. Run the Pipeline
+### 3. **Run the Pipeline**
 
 ```
 # Step 1: Ingest & index Google Drive documents
-poetry run python -m src.googledriveagenticiarag.rag_pipeline
+poetry run python -m googledriveagenticiarag.rag_pipeline
 
-# Step 2: Launch the chat interface
-poetry run python -m src.googledriveagenticiarag.main
+# Step 2: Launch the chat interface and test
+poetry run python -m googledriveagenticiarag.main
+
+# Step 3: Launch the App API and test with the API Swagger UI
+poetry run python -m googledriveagenticiarag.api
 
 ```
 **The app will**:
@@ -81,19 +87,19 @@ poetry run python -m src.googledriveagenticiarag.main
 [![doc search from google drive](assets/images/rag-demo-image.png)](https://donat-konan33.github.io/assets/videos/demo-rag.mp4)
 
 
-## 🔐 Security & Compliance
+## 🔐 **Security & Compliance**
 
 - Minimal scope: Only drive.readonly is used.
 - No data retention: Files are processed in-memory; only embeddings & metadata are stored locally.
 - User consent: Explicit OAuth approval required.
 - Private by default: Runs locally unless deployed to GCP.
 
-## Deployment Options
+## **Deployment Options**
 
 | Environment  | Notes                                               |
 | ------------ | --------------------------------------------------- |
 | Local (Dev)  | Uses local GPU/CPU via OpenLLM or LM Studio         |
-| GCP (Prod)   | Deploy with Vertex AI, Cloud Run, or Compute Engine |
+| GCP (Prod)   | Deploys with Vertex AI, Cloud Run, or Compute Engine |
 | ChromaDB Cloud | Optional managed vector DB (SOC 2 compliant)        |
 
 

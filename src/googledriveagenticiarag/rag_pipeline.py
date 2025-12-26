@@ -1,10 +1,10 @@
 """# check this way for more details https://codecut.ai/open-source-rag-pipeline-intelligent-qa-system/?utm_source=Klaviyo&utm_medium=email&utm_campaign=friday_campaign&_kx=6K-BmsU57-ERSOXiuodLkaFoXfMRecr7RohNBMowvLMa1Yj7nIfQ5vRXIAaXadVA.SgpyU4#document-ingestion-with-markitdown"""
 
-from src.googledriveagenticiarag.embedder import Embedder
+from googledriveagenticiarag.embedder import Embedder
 import json
-from src.googledriveagenticiarag.utils.processing_data import ProcessData
-from src.googledriveagenticiarag.connect_drive import ConnectDrive
-from src.googledriveagenticiarag.vector_store import EmbeddingsStorer
+from googledriveagenticiarag.utils.processing_data import ProcessData
+from googledriveagenticiarag.connect_drive import ConnectDrive
+from googledriveagenticiarag.vector_store import EmbeddingsStorer
 import asyncio
 from langchain.text_splitter import RecursiveCharacterTextSplitter # type: ignore
 

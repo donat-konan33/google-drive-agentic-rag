@@ -1,4 +1,19 @@
+# env variables
 .env
+
+# Tokens / Credentials
 ./token.json
-./my_README.md
+
+# python
+__pycache__/
 ./src/googledriveagenticiarag/agent.py
+
+# gradio
+.gradio/certificate.pem
+
+# chromadb
+chroma_db/05028e5e-67b7-4a53-b2f9-60bd14ac72b4/
+*.sqlite3
+
+# others
+./my_README.md

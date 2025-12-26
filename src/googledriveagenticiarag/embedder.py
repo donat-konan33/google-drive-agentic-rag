@@ -1,4 +1,4 @@
-from src.googledriveagenticiarag.utils.processing_data import ProcessData
+from googledriveagenticiarag.utils.processing_data import ProcessData
 
 
 import asyncio
